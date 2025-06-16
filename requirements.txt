@@ -9,3 +9,8 @@ fpdf
 python-dotenv
 openai
 google-generativeai
+pdfplumber==0.11.7
+pytesseract
+opencv-python
+Pillow
+numpy
