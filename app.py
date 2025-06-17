@@ -11,22 +11,30 @@ from utils.data_models import DailyDiaryData, SiteReportData
 def initialize_session_state():
     if 'extracted_data' not in st.session_state:
         st.session_state.extracted_data = None
-
 def upload_and_process_page():
     st.header("Upload & Process")
     uploaded_file = st.file_uploader("Upload site report PDF", type="pdf")
+
     if uploaded_file:
         parser = PDFParser()
         try:
+            st.info("📄 Extracting text from PDF...")
             raw_data = parser.extract_text_from_pdf(uploaded_file)
+            st.text_area("📄 Extracted Text (Raw)", raw_data, height=300)
+
             processor = GeminiProcessor(api_key=os.getenv("GOOGLE_API_KEY", ""))
+            st.info("🤖 Sending to Gemini for data extraction...")
             processed = processor.extract_site_report_data(raw_data)
-            st.session_state.extracted_data = processed
-            st.success("✅ Data extracted and processed.")
+
+            if processed:
+                st.session_state.extracted_data = processed
+                st.success("✅ Structured data extracted from Gemini.")
+            else:
+                st.error("❌ Gemini did not return structured data. Check API key or prompt format.")
+
         except Exception as e:
             st.error(f"Error: {e}")
             st.text(traceback.format_exc())
-
 def review_and_edit_page():
     st.header("Review & Edit")
     data = st.session_state.extracted_data
