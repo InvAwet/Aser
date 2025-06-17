@@ -9,4 +9,5 @@ fpdf
 python-dotenv
 openai
 google-generativeai
-pymupdf  # ← this installs `fitz`
+pymupdf       # for `fitz`
+reportlab     # for PDF generation
