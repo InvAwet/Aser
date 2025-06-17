@@ -20,7 +20,7 @@ def upload_and_process_page():
         try:
             raw_data = parser.extract_text_from_pdf(uploaded_file)
             processor = GeminiProcessor(api_key=os.getenv("GOOGLE_API_KEY", ""))
-            processed = processor.process(raw_data)
+            processed = processor.extract_site_report_data(raw_data)
             st.session_state.extracted_data = processed
             st.success("✅ Data extracted and processed.")
         except Exception as e:
