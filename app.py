@@ -26,11 +26,15 @@ def upload_and_process_page():
             st.info("🤖 Sending to Gemini for data extraction...")
             processed = processor.extract_site_report_data(raw_data)
 
-            if processed:
-                st.session_state.extracted_data = processed
-                st.success("✅ Structured data extracted from Gemini.")
-            else:
-                st.error("❌ Gemini did not return structured data. Check API key or prompt format.")
+# Show Gemini response if available
+if hasattr(processor, "last_response_text"):
+    st.text_area("🧠 Gemini Raw Response", processor.last_response_text, height=300)
+
+if processed:
+    st.session_state.extracted_data = processed
+    st.success("✅ Structured data extracted from Gemini.")
+else:
+    st.error("❌ Gemini did not return structured data. Check API key, model output, or prompt quality.")
 
         except Exception as e:
             st.error(f"Error: {e}")
