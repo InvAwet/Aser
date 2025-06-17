@@ -25,9 +25,14 @@ def upload_and_process_page():
 
             processor = GeminiProcessor(api_key=os.getenv("GOOGLE_API_KEY", ""))
             st.info("🤖 Sending to Gemini for data extraction...")
-            processed = processor.extract_site_report_data(raw_data)
 
-            # Show Gemini response if available
+            try:
+                processed = processor.extract_site_report_data(raw_data)
+            except Exception as gemini_error:
+                st.error(f"❌ Gemini Error: {gemini_error}")
+                return
+
+            # ✅ Show Gemini raw response
             if hasattr(processor, "last_response_text"):
                 st.text_area("🧠 Gemini Raw Response", processor.last_response_text, height=300)
 
@@ -38,7 +43,7 @@ def upload_and_process_page():
                 st.error("❌ Gemini did not return structured data. Check API key, model output, or prompt quality.")
 
         except Exception as e:
-            st.error(f"Error: {e}")
+            st.error(f"❌ General Error: {e}")
             st.text(traceback.format_exc())
 
 def review_and_edit_page():
