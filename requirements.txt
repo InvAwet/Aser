@@ -1,6 +1,6 @@
 streamlit
 pandas
-pdfplumber
+pdfplumber==0.11.7
 pytesseract
 opencv-python-headless
 numpy
@@ -9,9 +9,4 @@ fpdf
 python-dotenv
 openai
 google-generativeai
-pdfplumber==0.11.7
-pytesseract
-opencv-python
-Pillow
-numpy
-opencv-python-headless
+pymupdf  # ← this installs `fitz`
