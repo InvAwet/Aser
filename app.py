@@ -52,8 +52,8 @@ def review_and_edit_page():
     if data:
         df = pd.DataFrame([data.__dict__])
         edited = st.data_editor(df)
-if st.button("Save Changes"):
-    st.session_state.extracted_data = DailyDiaryData(**edited.to_dict(orient="records")[0])
+        if st.button("Save Changes"):
+            st.session_state.extracted_data = DailyDiaryData(**edited.to_dict(orient="records")[0])
             st.success("Changes saved.")
     else:
         st.info("Upload and process a report first.")
