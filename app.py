@@ -18,7 +18,7 @@ def upload_and_process_page():
     if uploaded_file:
         parser = PDFParser()
         try:
-            raw_data = parser.parse(uploaded_file)
+            raw_data = parser.extract_text_from_pdf(uploaded_file)
             processor = GeminiProcessor(api_key=os.getenv("GOOGLE_API_KEY", ""))
             processed = processor.process(raw_data)
             st.session_state.extracted_data = processed
