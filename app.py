@@ -11,6 +11,7 @@ from utils.data_models import DailyDiaryData, SiteReportData
 def initialize_session_state():
     if 'extracted_data' not in st.session_state:
         st.session_state.extracted_data = None
+
 def upload_and_process_page():
     st.header("Upload & Process")
     uploaded_file = st.file_uploader("Upload site report PDF", type="pdf")
@@ -26,19 +27,20 @@ def upload_and_process_page():
             st.info("🤖 Sending to Gemini for data extraction...")
             processed = processor.extract_site_report_data(raw_data)
 
-# Show Gemini response if available
-if hasattr(processor, "last_response_text"):
-    st.text_area("🧠 Gemini Raw Response", processor.last_response_text, height=300)
+            # Show Gemini response if available
+            if hasattr(processor, "last_response_text"):
+                st.text_area("🧠 Gemini Raw Response", processor.last_response_text, height=300)
 
-if processed:
-    st.session_state.extracted_data = processed
-    st.success("✅ Structured data extracted from Gemini.")
-else:
-    st.error("❌ Gemini did not return structured data. Check API key, model output, or prompt quality.")
+            if processed:
+                st.session_state.extracted_data = processed
+                st.success("✅ Structured data extracted from Gemini.")
+            else:
+                st.error("❌ Gemini did not return structured data. Check API key, model output, or prompt quality.")
 
         except Exception as e:
             st.error(f"Error: {e}")
             st.text(traceback.format_exc())
+
 def review_and_edit_page():
     st.header("Review & Edit")
     data = st.session_state.extracted_data
@@ -55,8 +57,8 @@ def generate_pdf_page():
     st.header("Generate PDF")
     data = st.session_state.extracted_data
     if data:
-        logo1 = st.file_uploader("Upload Nicholas O'Dwyer logo", type=["png","jpg","jpeg"], key="logo1")
-        logo2 = st.file_uploader("Upload MS Consultancy logo", type=["png","jpg","jpeg"], key="logo2")
+        logo1 = st.file_uploader("Upload Nicholas O'Dwyer logo", type=["png", "jpg", "jpeg"], key="logo1")
+        logo2 = st.file_uploader("Upload MS Consultancy logo", type=["png", "jpg", "jpeg"], key="logo2")
         if st.button("Generate PDF"):
             gen = EnhancedPDFGenerator()
             output = gen.generate(data, logo1, logo2)
