@@ -44,7 +44,7 @@ class GeminiProcessor:
             
             # Generate response using Gemini
             response = self.model.generate_content(prompt)
-            self.last_response_text = response.text if response and response.text else ""
+            self.last_response_text = response.text if response and response.text else "❌ No text in Gemini response"
             
             if response and response.text:
                 # Parse the response
