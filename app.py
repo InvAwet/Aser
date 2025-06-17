@@ -7,6 +7,7 @@ from utils.pdf_parser import PDFParser
 from utils.gemini_processor import GeminiProcessor
 from utils.enhanced_pdf_generator import EnhancedPDFGenerator
 from utils.data_models import DailyDiaryData, SiteReportData
+from io import BytesIO
 
 def initialize_session_state():
     if 'extracted_data' not in st.session_state:
@@ -64,12 +65,25 @@ def generate_pdf_page():
     if data:
         logo1 = st.file_uploader("Upload Nicholas O'Dwyer logo", type=["png", "jpg", "jpeg"], key="logo1")
         logo2 = st.file_uploader("Upload MS Consultancy logo", type=["png", "jpg", "jpeg"], key="logo2")
+
         if st.button("Generate PDF"):
-            gen = EnhancedPDFGenerator()
-            output = gen.generate(data, logo1, logo2)
-            b64 = base64.b64encode(output).decode()
-            href = f'<a href="data:application/octet-stream;base64,{b64}" download="diary_{datetime.now().strftime("%Y%m%d_%H%M%S")}.pdf">Download PDF</a>'
-            st.markdown(href, unsafe_allow_html=True)
+            if not logo1 or not logo2:
+                st.error("⚠️ Please upload both logos before generating the PDF.")
+                return
+
+            try:
+                gen = EnhancedPDFGenerator()
+                logo1_bytes = BytesIO(logo1.read())
+                logo2_bytes = BytesIO(logo2.read())
+
+                output = gen.generate(data, logo1_bytes, logo2_bytes)
+                b64 = base64.b64encode(output).decode()
+                href = f'<a href="data:application/octet-stream;base64,{b64}" download="diary_{datetime.now().strftime("%Y%m%d_%H%M%S")}.pdf">📥 Download PDF</a>'
+                st.markdown(href, unsafe_allow_html=True)
+                st.success("✅ PDF generated successfully.")
+            except Exception as e:
+                st.error(f"❌ PDF generation failed: {e}")
+                st.text(traceback.format_exc())
     else:
         st.info("Upload and process a report first.")
 
