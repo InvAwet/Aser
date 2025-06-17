@@ -1,17 +1,19 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime
-import os, traceback, io, base64
+import os, traceback, base64
+from io import BytesIO
 
 from utils.pdf_parser import PDFParser
 from utils.gemini_processor import GeminiProcessor
 from utils.enhanced_pdf_generator import EnhancedPDFGenerator
 from utils.data_models import DailyDiaryData, SiteReportData
-from io import BytesIO
+
 
 def initialize_session_state():
     if 'extracted_data' not in st.session_state:
         st.session_state.extracted_data = None
+
 
 def upload_and_process_page():
     st.header("Upload & Process")
@@ -33,7 +35,6 @@ def upload_and_process_page():
                 st.error(f"❌ Gemini Error: {gemini_error}")
                 return
 
-            # ✅ Show Gemini raw response
             if hasattr(processor, "last_response_text"):
                 st.text_area("🧠 Gemini Raw Response", processor.last_response_text, height=300)
 
@@ -47,6 +48,7 @@ def upload_and_process_page():
             st.error(f"❌ General Error: {e}")
             st.text(traceback.format_exc())
 
+
 def review_and_edit_page():
     st.header("Review & Edit")
     data = st.session_state.extracted_data
@@ -55,47 +57,53 @@ def review_and_edit_page():
         edited = st.data_editor(df)
         if st.button("Save Changes"):
             st.session_state.extracted_data = DailyDiaryData(**edited.to_dict(orient="records")[0])
-            st.success("Changes saved.")
+            st.success("✅ Changes saved.")
     else:
-        st.info("Upload and process a report first.")
+        st.info("⚠️ Please upload and process a report first.")
+
 
 def generate_pdf_page():
     st.header("Generate PDF")
     data = st.session_state.extracted_data
+
     if data:
-        logo1 = st.file_uploader("Upload Nicholas O'Dwyer logo", type=["png", "jpg", "jpeg"], key="logo1")
-        logo2 = st.file_uploader("Upload MS Consultancy logo", type=["png", "jpg", "jpeg"], key="logo2")
-
         if st.button("Generate PDF"):
-            if not logo1 or not logo2:
-                st.error("⚠️ Please upload both logos before generating the PDF.")
-                return
-
             try:
                 gen = EnhancedPDFGenerator()
-                logo1_bytes = BytesIO(logo1.read())
-                logo2_bytes = BytesIO(logo2.read())
 
+                # Load embedded logos from assets
+                with open("assets/logo_nod.png", "rb") as f1:
+                    logo1_bytes = BytesIO(f1.read())
+                with open("assets/logo_ms.png", "rb") as f2:
+                    logo2_bytes = BytesIO(f2.read())
+
+                # Generate the PDF
                 output = gen.generate(data, logo1_bytes, logo2_bytes)
+
+                # Enable download
                 b64 = base64.b64encode(output).decode()
                 href = f'<a href="data:application/octet-stream;base64,{b64}" download="diary_{datetime.now().strftime("%Y%m%d_%H%M%S")}.pdf">📥 Download PDF</a>'
                 st.markdown(href, unsafe_allow_html=True)
                 st.success("✅ PDF generated successfully.")
+
             except Exception as e:
-                st.error(f"❌ PDF generation failed: {e}")
+                st.error("❌ PDF generation failed:")
                 st.text(traceback.format_exc())
     else:
-        st.info("Upload and process a report first.")
+        st.info("⚠️ Please upload and process a report first.")
+
 
 def history_page():
     st.header("History")
-    st.info("History feature not implemented yet.")
+    st.info("🕓 History feature not implemented yet.")
+
 
 def main():
     initialize_session_state()
-    st.set_page_config(page_title="Aser Diary Converter")
+    st.set_page_config(page_title="Aser Diary Converter", layout="centered")
     st.sidebar.title("Navigation")
     page = st.sidebar.radio("Go to", ["Upload & Process", "Review & Edit", "Generate PDF", "History"])
+
     if page == "Upload & Process":
         upload_and_process_page()
     elif page == "Review & Edit":
@@ -104,6 +112,7 @@ def main():
         generate_pdf_page()
     elif page == "History":
         history_page()
+
 
 if __name__ == "__main__":
     main()
