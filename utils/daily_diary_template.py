@@ -141,6 +141,15 @@ class DailyDiaryTemplate:
         """Get project section headers"""
         return ['PROJECT', 'EMPLOYER', 'CONSULTANT', 'CONTRACTOR']
     
+    def get_project_data(self) -> List[str]:
+        """Get project section data"""
+        return [
+            'Construction of Trunk Lines for Kotebe and Kitime Sub-Catchment of Eastern Sewer Line Project',
+            'AAWSA-WISIDD, THE WORLD BANK',
+            'NICHOLAS O\'DWYER LTD. In Jv. with MS CONSULTANCY',
+            'ASER CONSTRUCTION PLC'
+        ]
+    
     def get_activity_headers(self) -> List[str]:
         """Get activity section headers"""
         return ['sn', 'Description/Topic - Contractor\'s work']
