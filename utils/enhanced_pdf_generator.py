@@ -91,7 +91,7 @@ class EnhancedPDFGenerator:
         # Nicholas O'Dwyer logo
         if self.template.logos['nod']:
             c.drawImage(self.template.logos['nod'], 12*mm, section_bottom + 10*mm, 
-                      width=40*mm, height=15*mm, preserveAspectRatio=True)
+                      width=30*mm, height=25*mm, preserveAspectRatio=True)
         else:
             c.setFont("Helvetica-Bold", 9)
             c.drawString(12*mm, section_bottom + 15*mm, "NICHOLAS")
@@ -113,7 +113,7 @@ class EnhancedPDFGenerator:
         
         if self.template.logos['ms']:
             c.drawImage(self.template.logos['ms'], 162*mm, section_bottom + 3*mm,
-                      width=45*mm, height=10*mm, preserveAspectRatio=True)
+                      width=45*mm, height=20*mm, preserveAspectRatio=True)
         else:
             c.setFont("Helvetica-Bold", 8)
             c.drawString(162*mm, section_bottom + 10*mm, "MS Consultancy")
