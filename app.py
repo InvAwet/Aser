@@ -52,16 +52,148 @@ def upload_and_process_page():
 def review_and_edit_page():
     st.header("Review & Edit")
     data = st.session_state.extracted_data
-    if data:
-        df = pd.DataFrame([data.__dict__])
-        edited = st.data_editor(df)
-        if st.button("Save Changes"):
-            st.session_state.extracted_data = DailyDiaryData(**edited.to_dict(orient="records")[0])
-            st.success("✅ Changes saved.")
-    else:
+    
+    if not data:
         st.info("⚠️ Please upload and process a report first.")
+        return
 
-
+    with st.form("diary_form"):
+        st.subheader("Project Information")
+        col1, col2 = st.columns(2)
+        data.project = col1.text_input("Project Name", data.project)
+        data.contractor = col2.text_input("Contractor", data.contractor)
+        data.employer = col1.text_input("Employer", data.employer)
+        data.consultant = col2.text_input("Consultant", data.consultant)
+        
+        st.divider()
+        st.subheader("Date & Time")
+        date_col, weather_col, time_col = st.columns([2, 2, 1])
+        data.date = date_col.text_input("Date (DD-MM-YYYY)", data.date)
+        data.weather = weather_col.selectbox("Weather", 
+                                           ["Sunny/Dry", "Cloudy", "Rainy", "Stormy"],
+                                           index=0 if not data.weather else 
+                                           ["Sunny/Dry", "Cloudy", "Rainy", "Stormy"].index(data.weather))
+        st.write("Work Period:")
+        time_col1, time_col2 = st.columns(2)
+        data.time_morning = time_col1.checkbox("Morning", value=data.time_morning)
+        data.time_afternoon = time_col2.checkbox("Afternoon", value=data.time_afternoon)
+        data.location = st.text_input("Location", data.location)
+        
+        st.divider()
+        st.subheader("Activities")
+        st.info("Add, edit, or remove activities below")
+        activities = pd.DataFrame(data.activities if data.activities else [])
+        if not activities.empty:
+            activities_edited = st.data_editor(
+                activities,
+                num_rows="dynamic",
+                column_config={
+                    "sn": st.column_config.NumberColumn("No.", width="small"),
+                    "description": "Description",
+                    "location": "Location",
+                    "quantity": "Quantity",
+                    "unit": "Unit"
+                },
+                use_container_width=True
+            )
+            data.activities = activities_edited.to_dict(orient='records')
+        else:
+            st.warning("No activities extracted. Add new ones below:")
+            if st.button("Add Activity"):
+                data.activities = [{"sn": 1, "description": "", "location": "", "quantity": "", "unit": ""}]
+        
+        st.divider()
+        st.subheader("Equipment")
+        st.info("Review equipment used on site")
+        equipment = pd.DataFrame(data.equipment if data.equipment else [])
+        if not equipment.empty:
+            equipment_edited = st.data_editor(
+                equipment,
+                num_rows="dynamic",
+                column_config={
+                    "sn": st.column_config.NumberColumn("No.", width="small"),
+                    "equipment": "Equipment Type",
+                    "no": "ID/Number",
+                    "operating_hours": "Op. Hours",
+                    "idle_hours": "Idle Hours",
+                    "status": "Status",
+                    "remarks": "Remarks"
+                },
+                use_container_width=True
+            )
+            data.equipment = equipment_edited.to_dict(orient='records')
+        else:
+            st.warning("No equipment information extracted")
+        
+        st.divider()
+        st.subheader("Personnel")
+        st.info("Edit personnel information")
+        personnel = pd.DataFrame(data.personnel if data.personnel else [])
+        if not personnel.empty:
+            personnel_edited = st.data_editor(
+                personnel,
+                num_rows="dynamic",
+                column_config={
+                    "sn": st.column_config.NumberColumn("No.", width="small"),
+                    "personnel": "Role/Type",
+                    "no": "Count",
+                    "hours": "Hours",
+                    "role": "Specific Role"
+                },
+                use_container_width=True
+            )
+            data.personnel = personnel_edited.to_dict(orient='records')
+        else:
+            st.warning("No personnel information extracted")
+        
+        st.divider()
+        st.subheader("Safety Information")
+        unsafe_acts = pd.DataFrame(data.unsafe_acts if data.unsafe_acts else [])
+        if not unsafe_acts.empty:
+            st.write("Unsafe Acts/Conditions:")
+            unsafe_edited = st.data_editor(
+                unsafe_acts,
+                num_rows="dynamic",
+                column_config={
+                    "sn": st.column_config.NumberColumn("No.", width="small"),
+                    "description": "Description",
+                    "severity": "Severity",
+                    "action_taken": "Action Taken"
+                }
+            )
+            data.unsafe_acts = unsafe_edited.to_dict(orient='records')
+        else:
+            st.info("No unsafe acts reported")
+        
+        data.near_miss = st.text_area("Near Miss/Accidents/Incidents", data.near_miss or "", height=100)
+        data.obstruction = st.text_area("Obstructions/Action Plans", data.obstruction or "", height=100)
+        data.engineers_note = st.text_area("Engineer's Notes", data.engineers_note or "", height=150)
+        
+        st.divider()
+        st.subheader("Signatures")
+        sig_col1, sig_col2, sig_col3 = st.columns(3)
+        data.prepared_by = sig_col1.text_input("Prepared By", data.prepared_by or "")
+        data.checked_by = sig_col2.text_input("Checked By", data.checked_by or "")
+        data.approved_by = sig_col3.text_input("Approved By", data.approved_by or "")
+        
+        st.divider()
+        st.subheader("Document Details")
+        doc_col1, doc_col2, doc_col3 = st.columns(3)
+        data.document_number = doc_col1.text_input("Document Number", data.document_number or "")
+        data.page_number = doc_col2.text_input("Page Number", data.page_number or "")
+        data.revision = doc_col3.text_input("Revision", data.revision or "")
+        
+        # Form submission
+        submitted = st.form_submit_button("Save All Changes")
+        if submitted:
+            validation_errors = data.validate()
+            if validation_errors:
+                st.error("Validation errors found:")
+                for error in validation_errors:
+                    st.error(f"- {error}")
+            else:
+                st.session_state.extracted_data = data
+                st.success("✅ All changes saved successfully!")
 def generate_pdf_page():
     st.header("Generate PDF")
     data = st.session_state.extracted_data
