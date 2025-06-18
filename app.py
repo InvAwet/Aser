@@ -14,39 +14,67 @@ def initialize_session_state():
     if 'extracted_data' not in st.session_state:
         st.session_state.extracted_data = None
 
-
 def upload_and_process_page():
     st.header("Upload & Process")
+    
+    # 1. Initialize session state variables
+    if 'uploaded_file' not in st.session_state:
+        st.session_state.uploaded_file = None
+    if 'upload_success' not in st.session_state:
+        st.session_state.upload_success = False
+
+    # Original file uploader widget
     uploaded_file = st.file_uploader("Upload site report PDF", type="pdf")
-
-    if uploaded_file:
-        parser = PDFParser()
-        try:
-            st.info("📄 Extracting text from PDF...")
-            raw_data = parser.extract_text_from_pdf(uploaded_file)
-            st.text_area("📄 Extracted Text (Raw)", raw_data, height=300)
-
-            processor = GeminiProcessor(api_key=os.getenv("GOOGLE_API_KEY", ""))
-            st.info("🤖 Sending to Gemini for data extraction...")
-
+    
+    # 2. Handle file selection and persistence
+    if uploaded_file and (uploaded_file != st.session_state.uploaded_file):
+        st.session_state.upload_success = False  # Reset processing flag
+        st.session_state.uploaded_file = uploaded_file  # Persist file
+        st.session_state.extracted_data = None  # Clear previous results
+    
+    # 3. Process only when requested
+    if st.session_state.uploaded_file:
+        # Display file info (original functionality)
+        file_details = {
+            "File name": st.session_state.uploaded_file.name,
+            "File size": f"{len(st.session_state.uploaded_file.getvalue()) / 1024:.2f} KB"
+        }
+        st.json(file_details)
+        
+        # Original processing flow triggered by button instead of auto-processing
+        if st.button("Process PDF", key="process_btn") and not st.session_state.upload_success:
+            parser = PDFParser()
             try:
-                processed = processor.extract_site_report_data(raw_data)
-            except Exception as gemini_error:
-                st.error(f"❌ Gemini Error: {gemini_error}")
-                return
+                st.info("📄 Extracting text from PDF...")
+                
+                # Use persisted file from session state
+                raw_data = parser.extract_text_from_pdf(st.session_state.uploaded_file)
+                st.text_area("📄 Extracted Text (Raw)", raw_data, height=300)
 
-            if hasattr(processor, "last_response_text"):
-                st.text_area("🧠 Gemini Raw Response", processor.last_response_text, height=300)
+                processor = GeminiProcessor(api_key=os.getenv("GOOGLE_API_KEY", ""))
+                st.info("🤖 Sending to Gemini for data extraction...")
 
-            if processed:
-                st.session_state.extracted_data = processed
-                st.success("✅ Structured data extracted from Gemini.")
-            else:
-                st.error("❌ Gemini did not return structured data. Check API key, model output, or prompt quality.")
+                try:
+                    processed = processor.extract_site_report_data(raw_data)
+                except Exception as gemini_error:
+                    st.error(f"❌ Gemini Error: {gemini_error}")
+                    return
 
-        except Exception as e:
-            st.error(f"❌ General Error: {e}")
-            st.text(traceback.format_exc())
+                if hasattr(processor, "last_response_text"):
+                    st.text_area("🧠 Gemini Raw Response", processor.last_response_text, height=300)
+
+                if processed:
+                    st.session_state.extracted_data = processed
+                    st.session_state.upload_success = True  # Mark processing complete
+                    st.success("✅ Structured data extracted from Gemini.")
+                else:
+                    st.error("❌ Gemini did not return structured data. Check API key, model output, or prompt quality.")
+
+            except Exception as e:
+                st.error(f"❌ General Error: {e}")
+                st.text(traceback.format_exc())
+    else:
+        st.info("⚠️ Please upload and process a report first.")         
 
 
 def review_and_edit_page():
