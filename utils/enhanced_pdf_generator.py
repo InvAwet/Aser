@@ -166,7 +166,7 @@ class EnhancedPDFGenerator:
         return section_bottom
 
     def _draw_project_section(self, c, data, start_y):
-        """Complete project section"""
+        """Complete project section with specific project information"""
         section_height = 14*mm
         section_bottom = start_y - section_height
 
@@ -182,15 +182,21 @@ class EnhancedPDFGenerator:
         c.drawString(12*mm + (2*col_width), start_y - 3*mm, "CONSULTANT")
         c.drawString(12*mm + (3*col_width), start_y - 3*mm, "CONTRACTOR")
 
-        # Data
+        # Data - Using specific project information
         c.setFont("Helvetica", 7)
-        c.drawString(12*mm, section_bottom + 7*mm, self._safe_text(getattr(data, 'project', '')))
-        c.drawString(12*mm + col_width, section_bottom + 7*mm, self._safe_text(getattr(data, 'employer', '')))
-        c.drawString(12*mm + (2*col_width), section_bottom + 7*mm, self._safe_text(getattr(data, 'consultant', '')))
-        c.drawString(12*mm + (3*col_width), section_bottom + 7*mm, self._safe_text(getattr(data, 'contractor', '')))
+        project_text = "Construction of Trunk Lines for Kotebe and Kitime Sub-Catchment of Eastern Sewer Line Project"
+        employer_text = "AAWSA-WISIDD, THE WORLD BANK"
+        consultant_text = "NICHOLAS O'DWYER LTD. In Jv. with MS CONSULTANCY"
+        contractor_text = "ASER CONSTRUCTION PLC"
+        
+        c.drawString(12*mm, section_bottom + 7*mm, project_text)
+        c.drawString(12*mm + col_width, section_bottom + 7*mm, employer_text)
+        c.drawString(12*mm + (2*col_width), section_bottom + 7*mm, consultant_text)
+        c.drawString(12*mm + (3*col_width), section_bottom + 7*mm, contractor_text)
 
         return section_bottom
 
+    # [Rest of the methods remain exactly the same...]
     def _draw_date_weather_section(self, c, data, start_y):
         """Complete date and weather section"""
         section_height = 8*mm
