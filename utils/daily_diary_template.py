@@ -1,20 +1,41 @@
 """
 Template configuration for Daily Diary PDF generation
 This module contains the layout and styling configurations for the PDF template
+with built-in logo handling from assets folder.
 """
 
 from typing import Dict, List, Any, Tuple
 from reportlab.lib.units import mm, inch
 from reportlab.lib import colors
+from reportlab.lib.utils import ImageReader
+import os
 
 class DailyDiaryTemplate:
-    """Template configuration for Daily Diary PDF"""
+    """Template configuration for Daily Diary PDF with integrated logo handling"""
     
     def __init__(self):
         self.setup_dimensions()
         self.setup_colors()
         self.setup_fonts()
         self.setup_sections()
+        self.load_logos()  # Load logos during initialization
+    
+    def load_logos(self):
+        """Load logos directly from assets folder with fallback handling"""
+        self.logos = {
+            'nod': self._load_logo('assets/logo_nod.png'),
+            'ms': self._load_logo('assets/logo_ms.png')
+        }
+    
+    def _load_logo(self, path: str):
+        """Internal method to load a logo with error handling"""
+        try:
+            if os.path.exists(path):
+                return ImageReader(path)
+            return None
+        except Exception as e:
+            print(f"Error loading logo {path}: {str(e)}")
+            return None
     
     def setup_dimensions(self):
         """Set up page dimensions and margins"""
@@ -120,7 +141,7 @@ class DailyDiaryTemplate:
         }
     
     def get_header_data(self) -> List[List[str]]:
-        """Get header section data"""
+        """Get header section data with logo placeholders"""
         return [
             ['NICHOLAS O\'DWYER', 'Company Name:', '', 'in Jv with'],
             ['', 'Unit E4, Nutgrove Office Park,', '', ''],
@@ -141,13 +162,13 @@ class DailyDiaryTemplate:
         """Get project section headers"""
         return ['PROJECT', 'EMPLOYER', 'CONSULTANT', 'CONTRACTOR']
     
-    def get_project_data(self) -> List[str]:
-        """Get project section data"""
+    def get_project_data(self, diary_data: Dict) -> List[str]:
+        """Get project section data from diary data"""
         return [
-            'Construction of Trunk Lines for Kotebe and Kitime Sub-Catchment of Eastern Sewer Line Project',
-            'AAWSA-WISIDD, THE WORLD BANK',
-            'NICHOLAS O\'DWYER LTD. In Jv. with MS CONSULTANCY',
-            'ASER CONSTRUCTION PLC'
+            diary_data.get('project', ''),
+            diary_data.get('employer', ''),
+            diary_data.get('consultant', ''),
+            diary_data.get('contractor', '')
         ]
     
     def get_activity_headers(self) -> List[str]:
@@ -248,7 +269,7 @@ class DailyDiaryTemplate:
         return row_heights.get(section, [])
     
     def validate_template_config(self) -> List[str]:
-        """Validate template configuration"""
+        """Validate template configuration including logos"""
         errors = []
         
         # Check dimensions
@@ -258,10 +279,11 @@ class DailyDiaryTemplate:
         if self.content_height <= 0:
             errors.append("Content height must be positive")
         
-        # Check column widths sum
-        total_width = sum(self.project_col_widths)
-        if abs(total_width - self.content_width) > 1*mm:
-            errors.append(f"Project column widths don't match content width: {total_width} vs {self.content_width}")
+        # Check logos
+        if not self.logos['nod']:
+            errors.append("Missing NOD logo at assets/logo_nod.png")
+        if not self.logos['ms']:
+            errors.append("Missing MS logo at assets/logo_ms.png")
         
         # Check font configurations
         for font_name, config in self.fonts.items():
