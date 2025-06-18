@@ -13,7 +13,7 @@ from utils.data_models import DailyDiaryData
 from PIL import Image
 
 class EnhancedPDFGenerator:
-    """Complete Daily Diary PDF Generator for /aser/ project structure"""
+    """Complete Daily Diary PDF Generator with fixed text overflow issues"""
 
     def __init__(self):
         self.page_width, self.page_height = A4
@@ -166,12 +166,13 @@ class EnhancedPDFGenerator:
         return section_bottom
 
     def _draw_project_section(self, c, data, start_y):
-        """Complete project section with specific project information"""
-        section_height = 14*mm
+        """Complete project section with text wrapping"""
+        section_height = 20*mm  # Increased height
         section_bottom = start_y - section_height
-
-        c.rect(10*mm, section_bottom, 190*mm, section_height)
         col_width = 190*mm / 4
+
+        # Draw borders
+        c.rect(10*mm, section_bottom, 190*mm, section_height)
         for i in range(1, 4):
             c.line(10*mm + (i * col_width), section_bottom, 10*mm + (i * col_width), start_y)
 
@@ -182,21 +183,20 @@ class EnhancedPDFGenerator:
         c.drawString(12*mm + (2*col_width), start_y - 3*mm, "CONSULTANT")
         c.drawString(12*mm + (3*col_width), start_y - 3*mm, "CONTRACTOR")
 
-        # Data - Using specific project information
-        c.setFont("Helvetica", 7)
+        # Project data with fixed text
         project_text = "Construction of Trunk Lines for Kotebe and Kitime Sub-Catchment of Eastern Sewer Line Project"
         employer_text = "AAWSA-WISIDD, THE WORLD BANK"
         consultant_text = "NICHOLAS O'DWYER LTD. In Jv. with MS CONSULTANCY"
         contractor_text = "ASER CONSTRUCTION PLC"
-        
-        c.drawString(12*mm, section_bottom + 7*mm, project_text)
-        c.drawString(12*mm + col_width, section_bottom + 7*mm, employer_text)
-        c.drawString(12*mm + (2*col_width), section_bottom + 7*mm, consultant_text)
-        c.drawString(12*mm + (3*col_width), section_bottom + 7*mm, contractor_text)
+
+        # Draw text with wrapping
+        self._draw_wrapped_text(c, project_text, 12*mm, start_y - 8*mm, col_width - 4*mm, 7, max_lines=2)
+        self._draw_wrapped_text(c, employer_text, 12*mm + col_width, start_y - 8*mm, col_width - 4*mm, 7, max_lines=1)
+        self._draw_wrapped_text(c, consultant_text, 12*mm + (2*col_width), start_y - 8*mm, col_width - 4*mm, 7, max_lines=2)
+        self._draw_wrapped_text(c, contractor_text, 12*mm + (3*col_width), start_y - 8*mm, col_width - 4*mm, 7, max_lines=1)
 
         return section_bottom
 
-    # [Rest of the methods remain exactly the same...]
     def _draw_date_weather_section(self, c, data, start_y):
         """Complete date and weather section"""
         section_height = 8*mm
@@ -222,9 +222,10 @@ class EnhancedPDFGenerator:
         return section_bottom
 
     def _draw_activities_section(self, c, data, start_y):
-        """Complete activities section"""
-        section_height = 25*mm
+        """Complete activities section with improved text handling"""
+        section_height = 40*mm  # Increased height
         section_bottom = start_y - section_height
+        row_height = 6*mm  # Increased row height
 
         c.rect(10*mm, section_bottom, 190*mm, section_height)
         c.setFont("Helvetica", 7)
@@ -234,13 +235,12 @@ class EnhancedPDFGenerator:
         c.line(10*mm, header_y, 200*mm, header_y)
         c.line(20*mm, section_bottom, 20*mm, header_y)
 
+        # Headers
         c.setFont("Helvetica-Bold", 6)
         c.drawString(12*mm, header_y + 1*mm, "sn")
         c.drawString(22*mm, header_y + 1*mm, "Description/Topic - Contractor's work")
 
         activities = getattr(data, 'activities', []) or []
-        row_height = 3.8*mm
-
         for i in range(5):
             row_y = header_y - (i + 1) * row_height
             c.line(10*mm, row_y, 200*mm, row_y)
@@ -249,8 +249,8 @@ class EnhancedPDFGenerator:
                 activity = activities[i]
                 c.setFont("Helvetica", 6)
                 c.drawString(12*mm, row_y + 1*mm, str(activity.get('sn', i + 1)))
-                self._draw_text_in_cell(c, self._safe_text(activity.get('description', '')), 
-                                     22*mm, row_y + 1*mm, 175*mm)
+                self._draw_wrapped_text(c, self._safe_text(activity.get('description', '')), 
+                                     22*mm, row_y + 1*mm, 175*mm, 6, max_lines=2)
 
         return section_bottom
 
@@ -290,24 +290,25 @@ class EnhancedPDFGenerator:
             if i < len(equipment):
                 eq = equipment[i]
                 c.drawString(12*mm, row_y + 0.5*mm, str(eq.get('sn', i + 1)))
-                self._draw_text_in_cell(c, self._safe_text(eq.get('equipment', '')), 
-                                     22*mm, row_y + 0.5*mm, 45*mm)
+                self._draw_wrapped_text(c, self._safe_text(eq.get('equipment', '')), 
+                                     22*mm, row_y + 0.5*mm, 45*mm, 6)
                 c.drawString(72*mm, row_y + 0.5*mm, self._safe_text(eq.get('no', '')))
 
             right_idx = i + 5
             if right_idx < len(equipment):
                 eq = equipment[right_idx]
                 c.drawString(107*mm, row_y + 0.5*mm, str(eq.get('sn', right_idx + 1)))
-                self._draw_text_in_cell(c, self._safe_text(eq.get('equipment', '')), 
-                                     132*mm, row_y + 0.5*mm, 45*mm)
+                self._draw_wrapped_text(c, self._safe_text(eq.get('equipment', '')), 
+                                     132*mm, row_y + 0.5*mm, 45*mm, 6)
                 c.drawString(157*mm, row_y + 0.5*mm, self._safe_text(eq.get('no', '')))
 
         return section_bottom
 
     def _draw_personnel_section(self, c, data, start_y):
-        """Complete personnel section"""
-        section_height = 55*mm
+        """Complete personnel section with improved layout"""
+        section_height = 70*mm  # Increased height
         section_bottom = start_y - section_height
+        row_height = 4*mm  # Adjusted row height
 
         c.rect(10*mm, section_bottom, 190*mm, section_height)
         c.setFont("Helvetica", 7)
@@ -329,8 +330,6 @@ class EnhancedPDFGenerator:
         c.drawString(157*mm, header_y + 1*mm, "No.")
 
         personnel = getattr(data, 'personnel', []) or []
-        row_height = 3.5*mm
-
         for i in range(14):
             row_y = header_y - (i + 1) * row_height
             c.line(10*mm, row_y, 200*mm, row_y)
@@ -340,16 +339,16 @@ class EnhancedPDFGenerator:
             if i < len(personnel):
                 person = personnel[i]
                 c.drawString(12*mm, row_y + 0.5*mm, str(person.get('sn', i + 1)))
-                self._draw_text_in_cell(c, self._safe_text(person.get('personnel', '')), 
-                                     22*mm, row_y + 0.5*mm, 45*mm)
+                self._draw_wrapped_text(c, self._safe_text(person.get('personnel', '')), 
+                                     22*mm, row_y + 0.5*mm, 45*mm, 6)
                 c.drawString(72*mm, row_y + 0.5*mm, self._safe_text(person.get('no', '')))
 
             right_idx = i + 14
             if right_idx < len(personnel):
                 person = personnel[right_idx]
                 c.drawString(107*mm, row_y + 0.5*mm, str(person.get('sn', right_idx + 1)))
-                self._draw_text_in_cell(c, self._safe_text(person.get('personnel', '')), 
-                                     132*mm, row_y + 0.5*mm, 45*mm)
+                self._draw_wrapped_text(c, self._safe_text(person.get('personnel', '')), 
+                                     132*mm, row_y + 0.5*mm, 45*mm, 6)
                 c.drawString(157*mm, row_y + 0.5*mm, self._safe_text(person.get('no', '')))
 
         return section_bottom
@@ -382,8 +381,8 @@ class EnhancedPDFGenerator:
                 act = unsafe_acts[i]
                 c.setFont("Helvetica", 7)
                 c.drawString(12*mm, row_y + 2*mm, str(act.get('sn', i + 1)))
-                self._draw_text_in_cell(c, self._safe_text(act.get('description', '')), 
-                                     22*mm, row_y + 2*mm, 175*mm)
+                self._draw_wrapped_text(c, self._safe_text(act.get('description', '')), 
+                                     22*mm, row_y + 2*mm, 175*mm, 7, max_lines=1)
 
         return section_bottom
 
@@ -396,8 +395,8 @@ class EnhancedPDFGenerator:
         c.setFont("Helvetica", 8)
         c.drawString(12*mm, near_miss_bottom + 8*mm, "7. Near Miss/Accidents/Incidents:")
         c.setFont("Helvetica", 7)
-        self._draw_text_in_cell(c, self._safe_text(getattr(data, 'near_miss', '')), 
-                             12*mm, near_miss_bottom + 4*mm, 185*mm)
+        self._draw_wrapped_text(c, self._safe_text(getattr(data, 'near_miss', '')), 
+                             12*mm, near_miss_bottom + 4*mm, 185*mm, 7)
 
         # Obstruction
         obstruction_height = 12*mm
@@ -406,8 +405,8 @@ class EnhancedPDFGenerator:
         c.setFont("Helvetica", 8)
         c.drawString(12*mm, obstruction_bottom + 8*mm, "8. Obstruction/Action Plans:")
         c.setFont("Helvetica", 7)
-        self._draw_text_in_cell(c, self._safe_text(getattr(data, 'obstruction', '')), 
-                             12*mm, obstruction_bottom + 4*mm, 185*mm)
+        self._draw_wrapped_text(c, self._safe_text(getattr(data, 'obstruction', '')), 
+                             12*mm, obstruction_bottom + 4*mm, 185*mm, 7)
 
         # Engineer's Note
         engineers_height = 20*mm
@@ -416,8 +415,8 @@ class EnhancedPDFGenerator:
         c.setFont("Helvetica", 8)
         c.drawString(12*mm, engineers_bottom + 16*mm, "9. Engineer's Note:")
         c.setFont("Helvetica", 7)
-        self._draw_text_in_cell(c, self._safe_text(getattr(data, 'engineers_note', '')), 
-                             12*mm, engineers_bottom + 10*mm, 185*mm)
+        self._draw_wrapped_text(c, self._safe_text(getattr(data, 'engineers_note', '')), 
+                             12*mm, engineers_bottom + 10*mm, 185*mm, 7)
 
         return engineers_bottom
 
@@ -454,15 +453,38 @@ class EnhancedPDFGenerator:
         """Safely convert text to string"""
         return str(text) if text is not None else ""
 
-    def _draw_text_in_cell(self, c, text, x, y, max_width):
-        """Draw text with truncation if needed"""
-        if not text:
-            return
+    def _draw_wrapped_text(self, c, text, x, y, max_width, font_size, max_lines=1):
+        """Improved text wrapping with line limit and ellipsis for overflow"""
+        c.setFont("Helvetica", font_size)
+        words = text.split()
+        lines = []
+        current_line = []
+        
+        for word in words:
+            test_line = ' '.join(current_line + [word])
+            if c.stringWidth(test_line, "Helvetica", font_size) <= max_width:
+                current_line.append(word)
+            else:
+                lines.append(' '.join(current_line))
+                current_line = [word]
+                if len(lines) >= max_lines:
+                    break
+        
+        if current_line and len(lines) < max_lines:
+            lines.append(' '.join(current_line))
+        
+        for i, line in enumerate(lines[:max_lines]):
+            c.drawString(x, y - (i * (font_size + 1)), line)
+        
+        # Add ellipsis if text was truncated
+        if len(lines) == max_lines and len(' '.join(lines)) < len(text):
+            last_line = lines[-1]
+            # Find how much we can fit with ellipsis
+            while last_line and c.stringWidth(last_line + "...", "Helvetica", font_size) > max_width:
+                last_line = last_line[:-1]
+            if last_line:
+                c.drawString(x, y - ((max_lines-1) * (font_size + 1)), last_line + "...")
 
-        if c.stringWidth(text, c._fontname, c._fontsize) <= max_width:
-            c.drawString(x, y, text)
-        else:
-            truncated = text
-            while len(truncated) > 0 and c.stringWidth(truncated + "...", c._fontname, c._fontsize) > max_width:
-                truncated = truncated[:-1]
-            c.drawString(x, y, truncated + "..." if truncated else "")
+    def _draw_text_in_cell(self, c, text, x, y, max_width):
+        """Legacy method kept for compatibility"""
+        self._draw_wrapped_text(c, text, x, y, max_width, c._fontsize)
