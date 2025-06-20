@@ -13,41 +13,42 @@ from utils.data_models import DailyDiaryData, SiteReportData
 def initialize_session_state():
     if 'extracted_data' not in st.session_state:
         st.session_state.extracted_data = None
+    if 'ready_for_pdf' not in st.session_state:
+        st.session_state.ready_for_pdf = False
+
 
 def upload_and_process_page():
     st.header("Upload & Process")
     
-    # 1. Initialize session state variables
+    # Initialize session state variables
     if 'uploaded_file' not in st.session_state:
         st.session_state.uploaded_file = None
     if 'upload_success' not in st.session_state:
         st.session_state.upload_success = False
 
-    # Original file uploader widget
+    # File uploader widget
     uploaded_file = st.file_uploader("Upload site report PDF", type="pdf")
     
-    # 2. Handle file selection and persistence
+    # Handle file selection and persistence
     if uploaded_file and (uploaded_file != st.session_state.uploaded_file):
-        st.session_state.upload_success = False  # Reset processing flag
-        st.session_state.uploaded_file = uploaded_file  # Persist file
-        st.session_state.extracted_data = None  # Clear previous results
+        st.session_state.upload_success = False
+        st.session_state.uploaded_file = uploaded_file
+        st.session_state.extracted_data = None
+        st.session_state.ready_for_pdf = False
     
-    # 3. Process only when requested
+    # Process only when requested
     if st.session_state.uploaded_file:
-        # Display file info (original functionality)
         file_details = {
             "File name": st.session_state.uploaded_file.name,
             "File size": f"{len(st.session_state.uploaded_file.getvalue()) / 1024:.2f} KB"
         }
         st.json(file_details)
         
-        # Original processing flow triggered by button instead of auto-processing
         if st.button("Process PDF", key="process_btn") and not st.session_state.upload_success:
             parser = PDFParser()
             try:
                 st.info("📄 Extracting text from PDF...")
                 
-                # Use persisted file from session state
                 raw_data = parser.extract_text_from_pdf(st.session_state.uploaded_file)
                 st.text_area("📄 Extracted Text (Raw)", raw_data, height=300)
 
@@ -65,7 +66,8 @@ def upload_and_process_page():
 
                 if processed:
                     st.session_state.extracted_data = processed
-                    st.session_state.upload_success = True  # Mark processing complete
+                    st.session_state.upload_success = True
+                    st.session_state.ready_for_pdf = False
                     st.success("✅ Structured data extracted from Gemini.")
                 else:
                     st.error("❌ Gemini did not return structured data. Check API key, model output, or prompt quality.")
@@ -85,18 +87,28 @@ def review_and_edit_page():
         st.info("⚠️ Please upload and process a report first.")
         return
 
+    # Set default metadata if empty
+    if not data.project:
+        data.project = "Construction of Trunk Lines for Kotebe and Kitime Sub-Catchment of Eastern Sewer Line Project"
+    if not data.employer:
+        data.employer = "AAWSA-WISIDD, THE WORLD BANK"
+    if not data.consultant:
+        data.consultant = "NICHOLAS O'DWYER LTD. In Jv. with MS CONSULTANCY"
+    if not data.contractor:
+        data.contractor = "ASER CONSTRUCTION PLC"
+
     with st.form("diary_form"):
         st.subheader("Project Information")
         col1, col2 = st.columns(2)
-        data.project = col1.text_input("Project Name", data.project)
-        data.contractor = col2.text_input("Contractor", data.contractor)
-        data.employer = col1.text_input("Employer", data.employer)
-        data.consultant = col2.text_input("Consultant", data.consultant)
+        data.project = col1.text_input("Project Name", value=data.project)
+        data.contractor = col2.text_input("Contractor", value=data.contractor)
+        data.employer = col1.text_input("Employer", value=data.employer)
+        data.consultant = col2.text_input("Consultant", value=data.consultant)
         
         st.divider()
         st.subheader("Date & Time")
         date_col, weather_col, time_col = st.columns([2, 2, 1])
-        data.date = date_col.text_input("Date (DD-MM-YYYY)", data.date)
+        data.date = date_col.text_input("Date (DD-MM-YYYY)", value=data.date)
         data.weather = weather_col.selectbox("Weather", 
                                            ["Sunny/Dry", "Cloudy", "Rainy", "Stormy"],
                                            index=0 if not data.weather else 
@@ -105,7 +117,7 @@ def review_and_edit_page():
         time_col1, time_col2 = st.columns(2)
         data.time_morning = time_col1.checkbox("Morning", value=data.time_morning)
         data.time_afternoon = time_col2.checkbox("Afternoon", value=data.time_afternoon)
-        data.location = st.text_input("Location", data.location)
+        data.location = st.text_input("Location", value=data.location)
         
         st.divider()
         st.subheader("Activities")
@@ -193,25 +205,24 @@ def review_and_edit_page():
         else:
             st.info("No unsafe acts reported")
         
-        data.near_miss = st.text_area("Near Miss/Accidents/Incidents", data.near_miss or "", height=100)
-        data.obstruction = st.text_area("Obstructions/Action Plans", data.obstruction or "", height=100)
-        data.engineers_note = st.text_area("Engineer's Notes", data.engineers_note or "", height=150)
+        data.near_miss = st.text_area("Near Miss/Accidents/Incidents", value=data.near_miss or "", height=100)
+        data.obstruction = st.text_area("Obstructions/Action Plans", value=data.obstruction or "", height=100)
+        data.engineers_note = st.text_area("Engineer's Notes", value=data.engineers_note or "", height=150)
         
         st.divider()
         st.subheader("Signatures")
         sig_col1, sig_col2, sig_col3 = st.columns(3)
-        data.prepared_by = sig_col1.text_input("Prepared By", data.prepared_by or "")
-        data.checked_by = sig_col2.text_input("Checked By", data.checked_by or "")
-        data.approved_by = sig_col3.text_input("Approved By", data.approved_by or "")
+        data.prepared_by = sig_col1.text_input("Prepared By", value=data.prepared_by or "")
+        data.checked_by = sig_col2.text_input("Checked By", value=data.checked_by or "")
+        data.approved_by = sig_col3.text_input("Approved By", value=data.approved_by or "")
         
         st.divider()
         st.subheader("Document Details")
         doc_col1, doc_col2, doc_col3 = st.columns(3)
-        data.document_number = doc_col1.text_input("Document Number", data.document_number or "")
-        data.page_number = doc_col2.text_input("Page Number", data.page_number or "")
-        data.revision = doc_col3.text_input("Revision", data.revision or "")
+        data.document_number = doc_col1.text_input("Document Number", value=data.document_number or "")
+        data.page_number = doc_col2.text_input("Page Number", value=data.page_number or "")
+        data.revision = doc_col3.text_input("Revision", value=data.revision or "")
         
-        # Form submission
         submitted = st.form_submit_button("Save All Changes")
         if submitted:
             validation_errors = data.validate()
@@ -221,30 +232,35 @@ def review_and_edit_page():
                     st.error(f"- {error}")
             else:
                 st.session_state.extracted_data = data
+                st.session_state.ready_for_pdf = True
                 st.success("✅ All changes saved successfully!")
+                st.rerun()
+
+
 def generate_pdf_page():
     st.header("Generate PDF")
+    
+    if not st.session_state.get('ready_for_pdf', False):
+        st.warning("⚠️ Please complete and save the review/edit section first")
+        return
+    
     data = st.session_state.extracted_data
 
-    if data:
-        if st.button("Generate PDF"):
-            try:
-                gen = EnhancedPDFGenerator()
+    if st.button("Generate PDF"):
+        try:
+            gen = EnhancedPDFGenerator()
+            output = gen.generate(data)
+            
+            st.session_state.generated_pdf = output
+            st.success("✅ PDF generated successfully!")
+            
+            b64 = base64.b64encode(output).decode()
+            href = f'<a href="data:application/pdf;base64,{b64}" download="diary_{datetime.now().strftime("%Y%m%d_%H%M%S")}.pdf">📥 Download PDF</a>'
+            st.markdown(href, unsafe_allow_html=True)
 
-                # Generate the PDF (logos now handled internally)
-                output = gen.generate(data)
-
-                # Enable download
-                b64 = base64.b64encode(output).decode()
-                href = f'<a href="data:application/octet-stream;base64,{b64}" download="diary_{datetime.now().strftime("%Y%m%d_%H%M%S")}.pdf">📥 Download PDF</a>'
-                st.markdown(href, unsafe_allow_html=True)
-                st.success("✅ PDF generated successfully.")
-
-            except Exception as e:
-                st.error("❌ PDF generation failed:")
-                st.text(traceback.format_exc())
-    else:
-        st.info("⚠️ Please upload and process a report first.")
+        except Exception as e:
+            st.error("❌ PDF generation failed:")
+            st.text(traceback.format_exc())
 
 
 def history_page():
