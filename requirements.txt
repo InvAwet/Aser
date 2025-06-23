@@ -11,3 +11,7 @@ openai
 google-generativeai
 pymupdf       # for `fitz`
 reportlab     # for PDF generation
+Flask>=2.0
+python-dotenv
+PyPDF2        # or your PDF library
+# ... plus any AI client libs, reportlab, etc.
